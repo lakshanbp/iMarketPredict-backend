@@ -1,0 +1,70 @@
+name: Build and deploy Python app to Azure Web App - iMarketPredict-Backend
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: iMarketPredict-Backend
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      # Skipping tests for now
+
+      - name: Upload artifact for deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-app
+          path: |
+            ./
+            !venv/
+          retention-days: 2  # Automatically delete artifact after 2 days to avoid storage quota issues
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_64BA493709F44F5799D5156E5A137A51 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_325606B97CF04129B19BB20CF2B224E5 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_877C93C8161A4191A9DCC31CE8795FC5 }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'imarketpredict'
+          slot-name: 'Production'
+          package: .
