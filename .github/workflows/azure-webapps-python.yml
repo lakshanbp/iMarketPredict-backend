@@ -41,8 +41,9 @@ jobs:
         with:
           name: python-app
           path: |
-            **/*
-          # (If you want to exclude venv, don't create it or don't commit it)
+            ./
+            !venv/
+          retention-days: 2  # Automatically delete artifact after 2 days to avoid storage quota issues
 
   deploy:
     runs-on: ubuntu-latest
